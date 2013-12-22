@@ -8,8 +8,8 @@
 @# md5sum : String
 @#     MD5Sum of the .msg specification
 @##############################################################################
-// Automatically generated from @file_name_in
 package @(spec.package)
+// Automatically generated from @file_name_in
 
 import (
     "ros"

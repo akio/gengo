@@ -23,16 +23,19 @@ MSG_TYPE_TO_GO = {
 }
 
 
-def msg_type_to_go(_type):
+def msg_type_to_go(package_context, _type):
     (base_type, is_array, array_len) = genmsg.msgs.parse_type(_type)
     if genmsg.msgs.is_builtin(base_type):
         go_type = MSG_TYPE_TO_GO[base_type]
     elif len(base_type.split('/')) == 1:
-        pass
+        go_type = base_type
     else:
         pkg = base_type.split('/')[0]
         msg = base_type.split('/')[1]
-        go_type = '{0}.{1}'.format(pkg, msg)
+        if package_context == pkg:
+            go_type = msg
+        else:
+            go_type = '{0}.{1}'.format(pkg, msg)
 
     if is_array:
         if array_len is None:
@@ -41,3 +44,6 @@ def msg_type_to_go(_type):
             return '[{0}]{1}'.format(array_len, go_type)
     else:
         return go_type
+
+def field_name_to_go(field):
+    return ''.join(x.capitalize() for x in field.split('_'))

@@ -7,9 +7,11 @@ set(GENGO_BIN_DIR "@(CMAKE_CURRENT_SOURCE_DIR)/scripts")
 set(GENGO_BIN_DIR "${gengo_DIR}/../../../@(CATKIN_PACKAGE_BIN_DESTINATION)")
 @[end if]@
 
-set(gengo_INSTALL_DIR go/src)
 set(GENMSG_GO_BIN ${GENGO_BIN_DIR}/gen_go.py)
 set(GENSRV_GO_BIN ${GENGO_BIN_DIR}/gen_go.py)
+
+execute_process(COMMAND go env GOARCH OUTPUT_VARIABLE ROSGO_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND go env GOOS OUTPUT_VARIABLE ROSGO_OS OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 # Generate .msg -> .go
 # The generated .go files should be added ALL_GEN_OUTPUT_FILES_go
@@ -67,48 +69,80 @@ macro(_generate_module_go ARG_PKG ARG_GEN_OUTPUT_DIR ARG_GENERATED_FILES)
 endmacro()
 
 
-#macro(rosgo_generate_messages)
-#    execute_process(COMMAND ${CATKIN_ENV} rosmsg packages
-#                    OUTPUT_VARIABLE rosmsg_output
-#                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-#    string(REPLACE "\n" ";" msg_pkg_list ${rosmsg_output})
-#    set(iflags "")
-#    foreach(msg_pkg ${msg_pkg_list})
-#        execute_process(COMMAND ${CATKIN_ENV} rospack find ${msg_pkg}
-#                        OUTPUT_VARIABLE msg_pkg_path
-#                        OUTPUT_STRIP_TRAILING_WHITESPACE)
-#        set(iflags "${iflags} -I${msg_pkg}:${msg_pkg_path}/msg")
-#    endforeach()
-#    message(STATUS iflags=${iflags})
-#    foreach(pkg ${ARGV})
-#        execute_process(COMMAND ${CATKIN_ENV} rospack find ${pkg}
-#                        OUTPUT_VARIABLE pkg_path
-#                        OUTPUT_STRIP_TRAILING_WHITESPACE)
-#        message(STATUS pkg_path=${pkg_path})
-#        set(msg_dir ${pkg_path}/msg)
-#        message(STATUS msg_dir=${msg_dir})
-#        file(GLOB msg_files "${msg_dir}/*.msg")
-#        message(STATUS msg_files=${msg_files})
-#    
-#        set(output_files "")
-#        foreach(msg ${msg_files})
-#            file(MAKE_DIRECTORY ${gengo_INSTALL_DIR}/${pkg})
-#            get_filename_component(msg_name ${msg} NAME_WE)
-#            set(output_file ${gengo_INSTALL_DIR}/${pkg}/${msg_name}.go)
-#            message(STATUS "${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN} ${msg} ${iflags} -p ${pkg} -o ${gengo_INSTALL_DIR}/${pkg}")
-#            add_custom_command(OUTPUT ${output_file}
-#                COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN}
-#                ${msg} ${iflags}
-#                -p ${pkg}
-#                -o ${gengo_INSTALL_DIR}/${pkg})
-#            list(APPEND output_files ${output_file})
-#        endforeach()
-#
-#        set(srv_dir ${pkg_path}/srv)
-#        message(STATUS srv_dir=${srv_dir})
-#        file(GLOB srv_files "${srv_dir}/*.srv")
-#        message(STATUS srv_files=${srv_files})
-#
-#        add_custom_target(rosgo_genmsg_for_${pkg} ALL DEPENDS ${output_files})
-#    endforeach()
-#endmacro()
+# Generate 
+macro(rosgo_force_generate_messages)
+    set(ROSGO_SRC_DIR ${CATKIN_DEVEL_PREFIX}/go/src)
+    execute_process(COMMAND ${CATKIN_ENV} rosmsg packages -s
+                    OUTPUT_VARIABLE rosmsg_output
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REPLACE " " ";" msg_pkg_list ${rosmsg_output})
+    set(iflags "")
+    foreach(msg_pkg ${msg_pkg_list})
+        execute_process(COMMAND ${CATKIN_ENV} rospack find ${msg_pkg}
+                        OUTPUT_VARIABLE msg_pkg_path
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        list(APPEND iflags "-I${msg_pkg}:${msg_pkg_path}/msg")
+    endforeach()
+    set(all_gen_output_files "")
+    foreach(pkg ${ARGV})
+        # Find msg directory
+        execute_process(COMMAND ${CATKIN_ENV} rospack find ${pkg}
+                        OUTPUT_VARIABLE pkg_path
+                        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(gen_output_files "")
+
+        #message(STATUS pkg_path=${pkg_path})
+        set(msg_dir ${pkg_path}/msg)
+        #message(STATUS msg_dir=${msg_dir})
+        file(GLOB msg_files "${msg_dir}/*.msg")
+        #message(STATUS msg_files=${msg_files})
+    
+        foreach(msg ${msg_files})
+            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg})
+            get_filename_component(msg_name ${msg} NAME_WE)
+            set(output_file ${ROSGO_SRC_DIR}/${pkg}/${msg_name}.go)
+            add_custom_command(OUTPUT ${output_file}
+                COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN}
+                ${msg} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}
+                )
+            list(APPEND gen_output_files ${output_file})
+        endforeach()
+
+        set(srv_dir ${pkg_path}/srv)
+        #message(STATUS srv_dir=${srv_dir})
+        file(GLOB srv_files "${srv_dir}/*.srv")
+        #message(STATUS srv_files=${srv_files})
+        foreach(srv ${srv_files})
+            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg})
+            get_filename_component(srv_name ${srv} NAME_WE)
+            set(output_files "")
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}.go)
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}Request.go)
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}Response.go)
+            add_custom_command(OUTPUT ${output_files}
+                COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN}
+                ${srv} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}
+                )
+            list(APPEND gen_output_files ${output_files})
+        endforeach()
+
+        install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/go/src/${pkg}
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/go/src/
+                PATTERN "*.go")
+
+        list(APPEND all_gen_output_files ${gen_output_files})
+    endforeach()
+    foreach(pkg ${ARGV})
+        set(msg_lib ${CATKIN_DEVEL_PREFIX}/go/pkg/${ROSGO_OS}_${ROSGO_ARCH}/${pkg}.a)
+        add_custom_command(OUTPUT ${msg_lib}
+            COMMAND env GOPATH=${CATKIN_DEVEL_PREFIX}/go go install ${pkg}
+            DEPENDS ${all_gen_output_files}
+            )
+        add_custom_target(rosgo_genmsg_for_${pkg} ALL DEPENDS ${msg_lib})
+
+        install(FILES ${msg_lib}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/go/pkg/${ROSGO_OS}_${ROSGO_ARCH}/)
+    endforeach()
+endmacro()
+
+set(gengo_INSTALL_DIR go/src)
