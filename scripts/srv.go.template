@@ -1,0 +1,53 @@
+@##############################################################################
+@# Template Context:
+@# -----------------------------------------------
+@# file_name_in : String
+@#     Source file
+@# spec : msggen.MsgSpec
+@#     Parsed specification of the .msg file
+@# md5sum : String
+@#     MD5Sum of the .msg specification
+@##############################################################################
+// Automatically generated from @file_name_in
+package @(spec.package)
+
+import (
+    "ros"
+)
+
+// Service type metadata
+type _@(spec.short_name)Type struct {
+    name string
+    md5sum string
+    text string
+    reqType ros.MessageType
+    resType ros.MessageType
+}
+
+func (t *_@(spec.short_name)Type) Name() string { return t.name }
+func (t *_@(spec.short_name)Type) MD5Sum() string { return t.md5sum }
+func (t *_@(spec.short_name)Type) Text() string { return t.text }
+func (t *_@(spec.short_name)Type) RequestType() ros.MessageType { return t.reqType }
+func (t *_@(spec.short_name)Type) ResponseType() ros.MessageType { return t.resType }
+func (t *_@(spec.short_name)Type) NewService() ros.Service {
+    return new(@(spec.short_name))
+}
+
+var (
+    TypeOf@(spec.short_name) = &_@(spec.short_name)Type {
+        "@(spec.full_name)",
+        "@(md5sum)",
+        `@(spec.text)`,
+        TypeOf@(spec.short_name)Request,
+        TypeOf@(spec.short_name)Response,
+    }
+)
+
+
+type @(spec.short_name) struct {
+    Request @(spec.short_name)Request
+    Response @(spec.short_name)Response
+}
+
+func (s *@(spec.short_name)) ReqMessage() ros.Message { return &s.Request }
+func (s *@(spec.short_name)) ResMessage() ros.Message { return &s.Response }
