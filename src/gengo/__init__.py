@@ -3,7 +3,7 @@
 import genmsg.msgs
 
 
-MSG_TYPE_TO_GO = {
+MSG_TYPE_TO_GO_TYPE = {
     'byte': 'int8',
     'char': 'uint8',
     'bool': 'bool',
@@ -23,10 +23,30 @@ MSG_TYPE_TO_GO = {
 }
 
 
+MSG_TYPE_TO_GO_ZERO_VALUE = {
+    'byte': '0',
+    'char': '0',
+    'bool': '0',
+    'uint8': '0',
+    'int8': '0',
+    'uint16': '0',
+    'int16': '0',
+    'uint32': '0',
+    'int32': '0',
+    'uint64': '0',
+    'int64': '0',
+    'float32': '0.0',
+    'float64': '0.0',
+    'string': '""',
+    'time': 'NewTime()',
+    'duration': 'NewDuration()'
+}
+
+
 def msg_type_to_go(package_context, _type):
     (base_type, is_array, array_len) = genmsg.msgs.parse_type(_type)
     if genmsg.msgs.is_builtin(base_type):
-        go_type = MSG_TYPE_TO_GO[base_type]
+        go_type = MSG_TYPE_TO_GO_TYPE[base_type]
     elif len(base_type.split('/')) == 1:
         go_type = base_type
     else:
@@ -45,5 +65,26 @@ def msg_type_to_go(package_context, _type):
     else:
         return go_type
 
-def field_name_to_go(field):
-    return ''.join(x.capitalize() for x in field.split('_'))
+def field_name_to_go(field_name):
+    return ''.join(x.capitalize() for x in field_name.split('_'))
+
+
+def msg_type_to_go_zero_value(package_context, _type):
+    (base_type, is_array, array_len) = genmsg.msgs.parse_type(_type)
+    if genmsg.msgs.is_builtin(_type):
+        return MSG_TYPE_TO_GO_ZERO_VALUE[base_type]
+    elif len(base_type.split('/')) == 1:
+        return 'Msg{0}.NewMessage()'.format(base_type)
+    else:
+        pkg = base_type.split('/')[0]
+        msg = base_type.split('/')[1]
+        if package_context == pkg:
+            return 'Msg{0}.NewMessage()'.format(msg)
+        else:
+            return '{0}.Msg{1}.NewMessage()'.format(pkg, msg)
+
+
+
+
+
+

@@ -42,30 +42,52 @@ for package in import_packages:
 }@
 )
 
-type _@(spec.short_name)Type struct {
+const (
+@[for const in spec.constants]@
+    @(const.name) @(gengo.msg_type_to_go(spec.package,  const.type)) = @(const.val)
+@[end for]@
+)
+
+
+type _Msg@(spec.short_name) struct {
     text string
     name string
     md5sum string
 }
 
-func (t *_@(spec.short_name)Type) Text() string {
+func (t *_Msg@(spec.short_name)) Text() string {
     return t.text
 }
 
-func (t *_@(spec.short_name)Type) Name() string {
+func (t *_Msg@(spec.short_name)) Name() string {
     return t.name
 }
 
-func (t *_@(spec.short_name)Type) MD5Sum() string {
+func (t *_Msg@(spec.short_name)) MD5Sum() string {
     return t.md5sum
 }
 
-func (t *_@(spec.short_name)Type) NewMessage() ros.Message {
-    return new(@(spec.short_name))
+func (t *_Msg@(spec.short_name)) NewMessage() ros.Message {
+    m := new(@(spec.short_name))
+@[for field in spec.parsed_fields()]@
+@{    name = gengo.field_name_to_go(field.name) }@
+@[    if field.is_array]@
+@[        if field.array_len is None]@
+    m.@(name) = nil
+@[        else]@
+    for i := 0; i < @(field.array_len); i++ {
+        m.@(name)[i] = @(gengo.msg_type_to_go_zero_value(spec.package, field.base_type))
+    }
+@[        end if]@
+@[    else]@
+    m.@(name) = @(gengo.msg_type_to_go_zero_value(spec.package, field.base_type))
+@[    end if]@
+@[end for]@
+    return m
 }
 
 var (
-    TypeOf@(spec.short_name) = &_@(spec.short_name)Type {
+    Msg@(spec.short_name) = &_Msg@(spec.short_name) {
         `@(spec.text)`,
         "@(spec.full_name)",
         "@(md5sum)",
@@ -88,10 +110,10 @@ func (m *@(spec.short_name)) Serialize(buf *bytes.Buffer) error {
     binary.Write(buf, binary.LittleEndian, uint32(len(m.@(name))))
     for _, e := range m.@(name) {
 @[        if field.is_builtin]@
-@[            if field.type == 'string']@
+@[            if field.base_type == 'string']@
         binary.Write(buf, binary.LittleEndian, uint32(len([]byte(e))))
         buf.Write([]byte(e))
-@[            elif field.type in ('time', 'duration')]@
+@[            elif field.base_type in ('time', 'duration')]@
         binary.Write(buf, binary.LittleEndian, e.Sec)
         binary.Write(buf, binary.LittleEndian, e.NSec)
 @[            else]@
@@ -105,10 +127,10 @@ func (m *@(spec.short_name)) Serialize(buf *bytes.Buffer) error {
     }
 @[    else]@
 @[        if field.is_builtin]@
-@[            if field.type == 'string']@
+@[            if field.base_type == 'string']@
     binary.Write(buf, binary.LittleEndian, uint32(len([]byte(m.@(name)))))
     buf.Write([]byte(m.@(name)))
-@[            elif field.type in ('time', 'duration')]@
+@[            elif field.base_type in ('time', 'duration')]@
     binary.Write(buf, binary.LittleEndian, m.@(name).Sec)
     binary.Write(buf, binary.LittleEndian, m.@(name).NSec)
 @[            else]@
@@ -135,10 +157,45 @@ func (m *@(spec.short_name)) Deserialize(buf *bytes.Reader) error {
         if err = binary.Read(buf, binary.LittleEndian, &size); err != nil {
             return err
         }
+@[        if field.array_len is None]@
+        m.@(name) = make([]@(gengo.msg_type_to_go(spec.package, field.base_type)), int(size))
+@[        end if]@
+        for i := 0; i < int(size); ++i {
+@[          if field.is_builtin]@
+@[              if field.base_type == 'string']@
+            {
+                var size uint32
+                if err = binary.Read(buf, binary.LittleEndian, &size); err != nil {
+                    return err
+                }
+                data := make([]byte, int(size))
+                if err = binary.Read(buf, binary.LittleEndian, data); err != nil {
+                    return err
+                }
+                m.@(name)[i] = string(data)
+            }
+@[              elif field.base_type in ('time', 'duration')]@
+            if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i].Sec); err != nil {
+                return err
+            }
+            if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i].NSec); err != nil {
+                return err
+            }
+@[              else]@
+            if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i]); err != nil {
+                return err
+            }
+@[              end if]@
+@[          else]@
+            if err = m.@(name)[i].Deserialize(buf); err != nil {
+                return err
+            }
+@[          end if]@
+        }
     }
 @[    else]@
 @[        if field.is_builtin]@
-@[            if field.type == 'string']@
+@[            if field.base_type == 'string']@
     {
         var size uint32
         if err = binary.Read(buf, binary.LittleEndian, &size); err != nil {
@@ -150,7 +207,7 @@ func (m *@(spec.short_name)) Deserialize(buf *bytes.Reader) error {
         }
         m.@(name) = string(data)
     }
-@[            elif field.type in ('time', 'duration')]@
+@[            elif field.base_type in ('time', 'duration')]@
     if err = binary.Read(buf, binary.LittleEndian, &m.@(name).Sec); err != nil {
         return err
     }
