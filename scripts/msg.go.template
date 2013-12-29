@@ -114,8 +114,8 @@ func (m *@(spec.short_name)) Serialize(buf *bytes.Buffer) error {
         binary.Write(buf, binary.LittleEndian, uint32(len([]byte(e))))
         buf.Write([]byte(e))
 @[            elif field.base_type in ('time', 'duration')]@
-        binary.Write(buf, binary.LittleEndian, e.Sec)
-        binary.Write(buf, binary.LittleEndian, e.NSec)
+        binary.Write(buf, binary.LittleEndian, e.Sec())
+        binary.Write(buf, binary.LittleEndian, e.NSec())
 @[            else]@
         binary.Write(buf, binary.LittleEndian, e)
 @[            end if]@
@@ -131,8 +131,8 @@ func (m *@(spec.short_name)) Serialize(buf *bytes.Buffer) error {
     binary.Write(buf, binary.LittleEndian, uint32(len([]byte(m.@(name)))))
     buf.Write([]byte(m.@(name)))
 @[            elif field.base_type in ('time', 'duration')]@
-    binary.Write(buf, binary.LittleEndian, m.@(name).Sec)
-    binary.Write(buf, binary.LittleEndian, m.@(name).NSec)
+    binary.Write(buf, binary.LittleEndian, m.@(name).Sec())
+    binary.Write(buf, binary.LittleEndian, m.@(name).NSec())
 @[            else]@
     binary.Write(buf, binary.LittleEndian, m.@(name))
 @[            end if]@
@@ -175,11 +175,17 @@ func (m *@(spec.short_name)) Deserialize(buf *bytes.Reader) error {
                 m.@(name)[i] = string(data)
             }
 @[              elif field.base_type in ('time', 'duration')]@
-            if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i].Sec); err != nil {
-                return err
-            }
-            if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i].NSec); err != nil {
-                return err
+            {
+                var value uint32
+                if err = binary.Read(buf, binary.LittleEndian, value); err != nil {
+                    return err
+                }
+                &m.@(name)[i].SetSec(value)
+
+                if err = binary.Read(buf, binary.LittleEndian, value); err != nil {
+                    return err
+                }
+                &m.@(name)[i].SetNSec(value)
             }
 @[              else]@
             if err = binary.Read(buf, binary.LittleEndian, &m.@(name)[i]); err != nil {
@@ -208,11 +214,17 @@ func (m *@(spec.short_name)) Deserialize(buf *bytes.Reader) error {
         m.@(name) = string(data)
     }
 @[            elif field.base_type in ('time', 'duration')]@
-    if err = binary.Read(buf, binary.LittleEndian, &m.@(name).Sec); err != nil {
-        return err
-    }
-    if err = binary.Read(buf, binary.LittleEndian, &m.@(name).NSec); err != nil {
-        return err
+    {
+        var value uint32
+        if err = binary.Read(buf, binary.LittleEndian, value); err != nil {
+            return err
+        }
+        &m.@(name)[i].SetSec(value)
+
+        if err = binary.Read(buf, binary.LittleEndian, value); err != nil {
+            return err
+        }
+        &m.@(name)[i].SetNSec(value)
     }
 @[            else]@
     if err = binary.Read(buf, binary.LittleEndian, &m.@(name)); err != nil {
