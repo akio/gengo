@@ -24,9 +24,9 @@ MSG_TYPE_TO_GO_TYPE = {
 
 
 MSG_TYPE_TO_GO_ZERO_VALUE = {
+    'bool': 'false',
     'byte': '0',
     'char': '0',
-    'bool': '0',
     'uint8': '0',
     'int8': '0',
     'uint16': '0',
@@ -38,8 +38,8 @@ MSG_TYPE_TO_GO_ZERO_VALUE = {
     'float32': '0.0',
     'float64': '0.0',
     'string': '""',
-    'time': 'NewTime()',
-    'duration': 'NewDuration()'
+    'time': 'ros.Time{}',
+    'duration': 'ros.Duration{}'
 }
 
 
@@ -74,14 +74,14 @@ def msg_type_to_go_zero_value(package_context, _type):
     if genmsg.msgs.is_builtin(_type):
         return MSG_TYPE_TO_GO_ZERO_VALUE[base_type]
     elif len(base_type.split('/')) == 1:
-        return 'Msg{0}.NewMessage()'.format(base_type)
+        return '{0}{{}}'.format(base_type)
     else:
         pkg = base_type.split('/')[0]
         msg = base_type.split('/')[1]
         if package_context == pkg:
-            return 'Msg{0}.NewMessage()'.format(msg)
+            return '{0}{{}}'.format(msg)
         else:
-            return '{0}.Msg{1}.NewMessage()'.format(pkg, msg)
+            return '{0}.{1}{{}}'.format(pkg, msg)
 
 
 
