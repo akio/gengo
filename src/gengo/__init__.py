@@ -65,6 +65,7 @@ def msg_type_to_go(package_context, _type):
     else:
         return go_type
 
+
 def field_name_to_go(field_name):
     return ''.join(x.capitalize() for x in field_name.split('_'))
 
