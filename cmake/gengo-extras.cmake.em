@@ -22,11 +22,11 @@ macro(_generate_msg_go ARG_PKG ARG_MSG ARG_IFLAGS ARG_MSG_DEPS ARG_GEN_OUTPUT_DI
   get_filename_component(MSG_SHORT_NAME ${ARG_MSG} NAME_WE)
 
   #Append msg to output dir
-  set(GEN_OUTPUT_DIR "${ARG_GEN_OUTPUT_DIR}/gen")
+  set(GEN_OUTPUT_DIR "${ARG_GEN_OUTPUT_DIR}")
   file(MAKE_DIRECTORY ${GEN_OUTPUT_DIR})
 
   set(MSG_GENERATED_NAME ${MSG_SHORT_NAME}.go)
-  set(GEN_OUTPUT_FILE ${GEN_OUTPUT_DIR}/gen/${MSG_GENERATED_NAME})
+  set(GEN_OUTPUT_FILE ${GEN_OUTPUT_DIR}/${MSG_GENERATED_NAME})
 
   add_custom_command(OUTPUT ${GEN_OUTPUT_FILE}
     DEPENDS ${GENMSG_GO_BIN} ${ARG_MSG} ${ARG_MSG_DEPS}
@@ -47,11 +47,11 @@ macro(_generate_srv_go ARG_PKG ARG_SRV ARG_IFLAGS ARG_MSG_DEPS ARG_GEN_OUTPUT_DI
   get_filename_component(SRV_SHORT_NAME ${ARG_SRV} NAME_WE)
 
   #Append msg to output dir
-  set(GEN_OUTPUT_DIR "${ARG_GEN_OUTPUT_DIR}/gen")
+  set(GEN_OUTPUT_DIR "${ARG_GEN_OUTPUT_DIR}")
   file(MAKE_DIRECTORY ${GEN_OUTPUT_DIR})
 
   set(SRV_GENERATED_NAME ${SRV_SHORT_NAME}.go)
-  set(GEN_OUTPUT_FILE ${GEN_OUTPUT_DIR}/gen/${SRV_GENERATED_NAME})
+  set(GEN_OUTPUT_FILE ${GEN_OUTPUT_DIR}/${SRV_GENERATED_NAME})
 
   add_custom_command(OUTPUT ${GEN_OUTPUT_FILE}
     DEPENDS ${GENSRV_GO_BIN} ${ARG_SRV} ${ARG_MSG_DEPS}
@@ -158,12 +158,12 @@ macro(rosgo_force_generate_messages)
         #message(STATUS msg_files=${msg_files})
     
         foreach(msg ${msg_files})
-            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg}/gen)
+            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg})
             get_filename_component(msg_name ${msg} NAME_WE)
-            set(output_file ${ROSGO_SRC_DIR}/${pkg}/gen/${msg_name}.go)
+            set(output_file ${ROSGO_SRC_DIR}/${pkg}/${msg_name}.go)
             add_custom_command(OUTPUT ${output_file}
                 COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN}
-                ${msg} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}/gen
+                ${msg} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}
                 )
             list(APPEND gen_output_files ${output_file})
         endforeach()
@@ -173,15 +173,15 @@ macro(rosgo_force_generate_messages)
         file(GLOB srv_files "${srv_dir}/*.srv")
         #message(STATUS srv_files=${srv_files})
         foreach(srv ${srv_files})
-            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg}/gen)
+            file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg})
             get_filename_component(srv_name ${srv} NAME_WE)
             set(output_files "")
-            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/gen/${srv_name}.go)
-            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/gen/${srv_name}Request.go)
-            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/gen/${srv_name}Response.go)
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}.go)
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}Request.go)
+            list(APPEND output_files ${ROSGO_SRC_DIR}/${pkg}/${srv_name}Response.go)
             add_custom_command(OUTPUT ${output_files}
                 COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE} ${GENMSG_GO_BIN}
-                ${srv} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}/gen
+                ${srv} ${iflags} -p ${pkg} -o ${ROSGO_SRC_DIR}/${pkg}
                 )
             list(APPEND gen_output_files ${output_files})
         endforeach()
