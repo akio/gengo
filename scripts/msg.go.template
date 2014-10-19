@@ -108,6 +108,9 @@ type @(spec.short_name) struct {
 @[end for]@
 }
 
+func (m *@(spec.short_name)) Type() ros.MessageType {
+	return Msg@(spec.short_name)
+}
 
 func (m *@(spec.short_name)) Serialize(buf *bytes.Buffer) error {
     var err error = nil
