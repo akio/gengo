@@ -99,7 +99,7 @@ macro(rosgo_generate_messages)
             #message(STATUS msg_dir=${msg_dir})
             file(GLOB msg_files "${msg_dir}/*.msg")
             #message(STATUS msg_files=${msg_files})
-    
+
             foreach(msg ${msg_files})
                 file(MAKE_DIRECTORY ${ROSGO_SRC_DIR}/${pkg})
                 get_filename_component(msg_name ${msg} NAME_WE)
