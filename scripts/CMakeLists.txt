@@ -5,5 +5,5 @@ install(
 
 install(
     FILES msg.go.template srv.go.template
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
